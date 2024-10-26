@@ -25,6 +25,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.folioreader.Config
 import com.folioreader.FolioReader
 import com.folioreader.R
+import com.folioreader.databinding.TextSelectionBinding
+import com.folioreader.databinding.ViewConfigBinding
 import com.folioreader.mediaoverlay.MediaController
 import com.folioreader.mediaoverlay.MediaControllerCallbacks
 import com.folioreader.model.HighLight
@@ -81,6 +83,11 @@ class FolioPageFragment : Fragment(),
             return fragment
         }
     }
+
+    private var _binding: TextSelectionBinding? = null
+    // This property is only valid between onCreateView and
+// onDestroyView.
+    protected val binding get() = _binding!!
 
     private lateinit var uiHandler: Handler
     private var mHtmlString: String? = null
@@ -142,10 +149,10 @@ class FolioPageFragment : Fragment(),
 
         EventBus.getDefault().register(this)
 
-        spineIndex = arguments!!.getInt(BUNDLE_SPINE_INDEX)
-        mBookTitle = arguments!!.getString(BUNDLE_BOOK_TITLE)
-        spineItem = arguments!!.getSerializable(BUNDLE_SPINE_ITEM) as Link
-        mBookId = arguments!!.getString(FolioReader.EXTRA_BOOK_ID)
+        spineIndex = requireArguments().getInt(BUNDLE_SPINE_INDEX)
+        mBookTitle = requireArguments().getString(BUNDLE_BOOK_TITLE)
+        spineItem = requireArguments().getSerializable(BUNDLE_SPINE_ITEM) as Link
+        mBookId = requireArguments().getString(FolioReader.EXTRA_BOOK_ID)
 
         chapterUrl = Uri.parse(mActivityCallback?.streamerUrl + spineItem.href!!.substring(1))
 
@@ -173,6 +180,8 @@ class FolioPageFragment : Fragment(),
         initAnimations()
         initWebView()
         updatePagesLeftTextBg()
+
+        _binding = TextSelectionBinding.inflate(inflater, container, false)
 
         return mRootView
     }
@@ -375,9 +384,9 @@ class FolioPageFragment : Fragment(),
 
         mWebview!!.addJavascriptInterface(this, "Highlight")
         mWebview!!.addJavascriptInterface(this, "FolioPageFragment")
-        mWebview!!.addJavascriptInterface(webViewPager, "WebViewPager")
-        mWebview!!.addJavascriptInterface(loadingView, "LoadingView")
-        mWebview!!.addJavascriptInterface(mWebview, "FolioWebView")
+        mWebview!!.addJavascriptInterface(webViewPager!!, "WebViewPager")
+        mWebview!!.addJavascriptInterface(loadingView!!, "LoadingView")
+        mWebview!!.addJavascriptInterface(mWebview!!, "FolioWebView")
 
         mWebview!!.setScrollListener(object : FolioWebView.ScrollListener {
             override fun onScrollChange(percent: Int) {
@@ -490,6 +499,7 @@ class FolioPageFragment : Fragment(),
             }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
             if (url.isEmpty())
@@ -506,6 +516,7 @@ class FolioPageFragment : Fragment(),
         }
 
         // prevent favicon.ico to be loaded automatically
+        @Deprecated("Deprecated in Java")
         override fun shouldInterceptRequest(view: WebView, url: String): WebResourceResponse? {
             if (url.toLowerCase().contains("/favicon.ico")) {
                 try {
@@ -610,7 +621,7 @@ class FolioPageFragment : Fragment(),
 
             val intent = Intent(FolioReader.ACTION_SAVE_READ_LOCATOR)
             intent.putExtra(FolioReader.EXTRA_READ_LOCATOR, lastReadLocator as Parcelable?)
-            LocalBroadcastManager.getInstance(context!!).sendBroadcast(intent)
+            LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(intent)
 
             (this as java.lang.Object).notify()
         }
@@ -637,7 +648,7 @@ class FolioPageFragment : Fragment(),
 
     private fun setupScrollBar() {
         UiUtil.setColorIntToDrawable(mConfig!!.themeColor, mScrollSeekbar!!.progressDrawable)
-        val thumbDrawable = ContextCompat.getDrawable(activity!!, R.drawable.icons_sroll)
+        val thumbDrawable = ContextCompat.getDrawable(requireActivity(), R.drawable.icons_sroll)
         UiUtil.setColorIntToDrawable(mConfig!!.themeColor, thumbDrawable!!)
         mScrollSeekbar!!.thumb = thumbDrawable
     }
@@ -797,7 +808,7 @@ class FolioPageFragment : Fragment(),
     fun onReceiveHighlights(html: String?) {
         if (html != null) {
             rangy = HighlightUtil.createHighlightRangy(
-                activity!!.applicationContext,
+                requireActivity().applicationContext,
                 html,
                 mBookId,
                 pageName,
@@ -821,13 +832,13 @@ class FolioPageFragment : Fragment(),
             val highlightImpl = HighLightTable.updateHighlightStyle(id, style)
             if (highlightImpl != null) {
                 HighlightUtil.sendHighlightBroadcastEvent(
-                    activity!!.applicationContext,
+                    requireActivity().applicationContext,
                     highlightImpl,
                     HighLight.HighLightAction.MODIFY
                 )
             }
             val rangyString = HighlightUtil.generateRangyString(pageName)
-            activity!!.runOnUiThread { loadRangy(rangyString) }
+            requireActivity().runOnUiThread { loadRangy(rangyString) }
 
         }
     }
@@ -838,7 +849,7 @@ class FolioPageFragment : Fragment(),
         if (isCurrentFragment) {
             if (outState != null)
                 outState!!.putSerializable(BUNDLE_READ_LOCATOR_CONFIG_CHANGE, lastReadLocator)
-            if (activity != null && !activity!!.isFinishing && lastReadLocator != null)
+            if (activity != null && !requireActivity().isFinishing && lastReadLocator != null)
                 mActivityCallback!!.storeLastReadLocator(lastReadLocator)
         }
         if (mWebview != null) mWebview!!.destroy()

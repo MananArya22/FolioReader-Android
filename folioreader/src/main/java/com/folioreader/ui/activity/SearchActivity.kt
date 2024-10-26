@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.folioreader.Config
 import com.folioreader.R
+import com.folioreader.databinding.ActivitySearchBinding
 import com.folioreader.model.locators.SearchLocator
 import com.folioreader.ui.adapter.ListViewType
 import com.folioreader.ui.adapter.OnItemClickListener
@@ -31,10 +32,11 @@ import com.folioreader.ui.view.FolioSearchView
 import com.folioreader.util.AppUtil
 import com.folioreader.util.UiUtil
 import com.folioreader.viewmodels.SearchViewModel
-import kotlinx.android.synthetic.main.activity_search.*
 import java.lang.reflect.Field
 
 class SearchActivity : AppCompatActivity(), OnItemClickListener {
+
+    private lateinit var binding: ActivitySearchBinding
 
     companion object {
         @JvmField
@@ -70,9 +72,9 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
             oldLeft: Int, oldTop: Int, oldRight: Int, oldBottom: Int
         ) {
 
-            for (i in 0 until toolbar.childCount) {
+            for (i in 0 until binding.toolbar.childCount) {
 
-                val view: View = toolbar.getChildAt(i)
+                val view: View = binding.toolbar.getChildAt(i)
                 val contentDescription: String? = view.contentDescription as String?
                 if (TextUtils.isEmpty(contentDescription))
                     continue
@@ -86,7 +88,7 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
                         navigateBack()
                     }
 
-                    toolbar.removeOnLayoutChangeListener(this)
+                    binding.toolbar.removeOnLayoutChangeListener(this)
                     return
                 }
             }
@@ -96,6 +98,8 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.v(LOG_TAG, "-> onCreate")
+        binding = ActivitySearchBinding.inflate(layoutInflater)
+        val view = binding.root
 
         val config: Config = AppUtil.getSavedConfig(this)!!
         if (config.isNightMode) {
@@ -104,15 +108,15 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
             setTheme(R.style.FolioDayTheme)
         }
 
-        setContentView(R.layout.activity_search)
+        setContentView(view)
         init(config)
     }
 
     private fun init(config: Config) {
         Log.v(LOG_TAG, "-> init")
 
-        setSupportActionBar(toolbar)
-        toolbar.addOnLayoutChangeListener(toolbarOnLayoutChangeListener)
+        setSupportActionBar(binding.toolbar)
+        binding.toolbar.addOnLayoutChangeListener(toolbarOnLayoutChangeListener)
         actionBar = supportActionBar!!
         actionBar.setDisplayHomeAsUpEnabled(true)
         actionBar.setDisplayShowTitleEnabled(false)
@@ -120,20 +124,20 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
         try {
             val fieldCollapseIcon: Field = Toolbar::class.java.getDeclaredField("mCollapseIcon")
             fieldCollapseIcon.isAccessible = true
-            val collapseIcon: Drawable = fieldCollapseIcon.get(toolbar) as Drawable
+            val collapseIcon: Drawable = fieldCollapseIcon.get(binding.toolbar) as Drawable
             UiUtil.setColorIntToDrawable(config.themeColor, collapseIcon)
         } catch (e: Exception) {
             Log.e(LOG_TAG, "-> ", e)
         }
 
         spineSize = intent.getIntExtra(BUNDLE_SPINE_SIZE, 0)
-        searchUri = intent.getParcelableExtra(BUNDLE_SEARCH_URI)
+        searchUri = intent.getParcelableExtra(BUNDLE_SEARCH_URI)!!
 
         searchAdapter = SearchAdapter(this)
         searchAdapter.onItemClickListener = this
         linearLayoutManager = LinearLayoutManager(this)
-        recyclerView.layoutManager = linearLayoutManager
-        recyclerView.adapter = searchAdapter
+        binding.recyclerView.layoutManager = linearLayoutManager
+        binding.recyclerView.adapter = searchAdapter
 
         searchViewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
         searchAdapterDataBundle = searchViewModel.liveAdapterDataBundle.value!!
@@ -145,7 +149,7 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
             searchAdapter.changeDataBundle(bundleFromFolioActivity)
             val position = bundleFromFolioActivity.getInt(BUNDLE_FIRST_VISIBLE_ITEM_INDEX)
             Log.d(LOG_TAG, "-> onCreate -> scroll to previous position $position")
-            recyclerView.scrollToPosition(position)
+            binding.recyclerView.scrollToPosition(position)
         }
 
         searchViewModel.liveAdapterDataBundle.observe(this, Observer<Bundle> { dataBundle ->
@@ -155,10 +159,11 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
     }
 
     override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
         Log.v(LOG_TAG, "-> onNewIntent")
 
         if (intent.hasExtra(BUNDLE_SEARCH_URI)) {
-            searchUri = intent.getParcelableExtra(BUNDLE_SEARCH_URI)
+            searchUri = intent.getParcelableExtra(BUNDLE_SEARCH_URI)!!
         } else {
             intent.putExtra(BUNDLE_SEARCH_URI, searchUri)
             intent.putExtra(BUNDLE_SPINE_SIZE, spineSize)
@@ -173,13 +178,15 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
     private fun handleSearch() {
         Log.v(LOG_TAG, "-> handleSearch")
 
-        val query: String = intent.getStringExtra(SearchManager.QUERY)
+        val query: String? = intent.getStringExtra(SearchManager.QUERY)
         val newDataBundle = Bundle()
         newDataBundle.putString(ListViewType.KEY, ListViewType.PAGINATION_IN_PROGRESS_VIEW.toString())
         newDataBundle.putParcelableArrayList("DATA", ArrayList<SearchLocator>())
         searchViewModel.liveAdapterDataBundle.value = newDataBundle
 
-        searchViewModel.search(spineSize, query)
+        if (query != null) {
+            searchViewModel.search(spineSize, query)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -211,7 +218,9 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
         finish()
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        super.onBackPressed()
         Log.v(LOG_TAG, "-> onBackPressed")
     }
 
@@ -270,15 +279,16 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
 
         itemSearch.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
 
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 return true
             }
 
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 Log.v(LOG_TAG, "-> onMenuItemActionCollapse")
                 navigateBack()
                 return false
             }
+
         })
 
         searchView.setOnQueryTextFocusChangeListener { _, hasFocus ->
@@ -288,7 +298,7 @@ class SearchActivity : AppCompatActivity(), OnItemClickListener {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
         val itemId = item?.itemId
 

@@ -17,8 +17,8 @@ class FolioAppBarLayout : AppBarLayout {
     var navigationBarHeight: Int = 0
     var insets: Rect? = null
 
-    constructor(context: Context?) : super(context)
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {
+    constructor(context: Context?) : super(context!!)
+    constructor(context: Context?, attrs: AttributeSet?) : super(context!!, attrs) {
 
         ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
             Log.v(LOG_TAG, "-> onApplyWindowInsets")
@@ -39,6 +39,7 @@ class FolioAppBarLayout : AppBarLayout {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun fitSystemWindows(insets: Rect?): Boolean {
         Log.v(LOG_TAG, "-> fitSystemWindows")
         // For API level 19 and below

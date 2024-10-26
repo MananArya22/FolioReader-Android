@@ -1,8 +1,7 @@
 apply plugin: 'com.android.library'
 apply from: '../config/quality/quality.gradle'
-apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-parcelize'
 
 ext {
     bintrayRepo = 'maven'
@@ -74,9 +73,12 @@ android {
     checkstyle {
         ignoreFailures = true
     }
+
+    buildFeatures {
+        viewBinding true
+    }
 }
 
-apply from: '../folioreader/bintray/installv1.gradle'
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
@@ -104,11 +106,14 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-jackson:$versions.retrofit"
     implementation "com.squareup.retrofit2:converter-gson:$versions.retrofit"
 
+    implementation "org.readium.kotlin-toolkit:readium-shared:$versions.readium_version"
+    implementation "org.readium.kotlin-toolkit:readium-streamer:$versions.readium_version"
+
     // R2 modules
-    api("com.github.codetoart:r2-shared-kotlin:$versions.r2SharedKotlin") {
+    implementation("com.github.codetoart:r2-shared-kotlin:$versions.r2SharedKotlin") {
         changing = true
     }
-    api("com.github.codetoart:r2-streamer-kotlin:$versions.r2StreamerKotlin") {
+    implementation("com.github.codetoart:r2-streamer-kotlin:$versions.r2StreamerKotlin") {
         exclude group: "org.slf4j", module: "slf4j-api"
         changing = true
     }

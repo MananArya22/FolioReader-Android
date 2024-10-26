@@ -8,12 +8,15 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.folioreader.util.ObjectMapperSingleton
+import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parceler
 import org.readium.r2.shared.Locations
 import org.readium.r2.shared.Locator
 import org.readium.r2.shared.LocatorText
 
 @JsonPropertyOrder("bookId", "href", "created", "locations")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Parcelize
 open class ReadLocator : Locator, Parcelable {
 
     var bookId: String
@@ -40,16 +43,7 @@ open class ReadLocator : Locator, Parcelable {
         parcel.readSerializable() as LocatorText?
     )
 
-    override fun writeToParcel(dest: Parcel?, flags: Int) {
-        dest?.writeString(bookId)
-        dest?.writeString(href)
-        dest?.writeLong(created)
-        dest?.writeString(title)
-        dest?.writeSerializable(locations)
-        dest?.writeSerializable(text)
-    }
-
-    companion object {
+    companion object : Parceler<ReadLocator> {
 
         @JvmField
         val LOG_TAG: String = ReadLocator::class.java.simpleName
@@ -67,15 +61,17 @@ open class ReadLocator : Locator, Parcelable {
             }
         }
 
-        @JvmField
-        val CREATOR = object : Parcelable.Creator<ReadLocator> {
-            override fun createFromParcel(parcel: Parcel): ReadLocator {
-                return ReadLocator(parcel)
-            }
+        override fun ReadLocator.write(dest: Parcel, flags: Int){
+            dest?.writeString(bookId)
+            dest?.writeString(href)
+            dest?.writeLong(created)
+            dest?.writeString(title)
+            dest?.writeSerializable(locations)
+            dest?.writeSerializable(text)
+        }
 
-            override fun newArray(size: Int): Array<ReadLocator?> {
-                return arrayOfNulls(size)
-            }
+        override fun create(parcel: Parcel): ReadLocator {
+            return ReadLocator(parcel)
         }
     }
 
